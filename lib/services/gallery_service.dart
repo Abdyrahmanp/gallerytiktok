@@ -1,6 +1,6 @@
 // lib/services/gallery_service.dart
 // Core service: reads local video library via photo_manager.
-// Handles pagination, sorting, and filtering of hidden videos.
+// Handles pagination, sorting, album filtering, and hidden videos.
 
 import 'package:flutter/foundation.dart';
 import 'package:photo_manager/photo_manager.dart';
@@ -22,16 +22,10 @@ class GalleryService {
   }
 
   // ----------------------------------------------------------------
-  // Load all video assets (paginated) from gallery
-  // Returns a sorted, filtered list based on [mode].
+  // Fetch all video albums (folders)
   // ----------------------------------------------------------------
-  Future<List<VideoItem>> loadVideos({
-    required PlaybackMode mode,
-    int page = 0,
-    int pageSize = AppConstants.paginationBatchSize,
-  }) async {
+  Future<List<AssetPathEntity>> getAlbums() async {
     try {
-      // Fetch ALL video albums (including "Recents")
       final albums = await PhotoManager.getAssetPathList(
         type: RequestType.video,
         filterOption: FilterOptionGroup(
@@ -42,18 +36,72 @@ class GalleryService {
           ),
         ),
       );
+      return albums;
+    } catch (e) {
+      debugPrint('[GalleryService] getAlbums error: $e');
+      return [];
+    }
+  }
 
+  // ----------------------------------------------------------------
+  // Fetch video assets (optionally filtered by album IDs)
+  // ----------------------------------------------------------------
+  Future<List<AssetEntity>> getAllVideoAssets({Set<String>? albumIds}) async {
+    try {
+      final albums = await getAlbums();
       if (albums.isEmpty) return [];
 
-      // Use the "All Videos" album (usually first / largest)
+      if (albumIds != null && albumIds.isNotEmpty) {
+        final selectedAlbums = albums.where((a) => albumIds.contains(a.id)).toList();
+        if (selectedAlbums.isEmpty) return [];
+
+        final Map<String, AssetEntity> assetMap = {};
+        for (final album in selectedAlbums) {
+          final count = await album.assetCountAsync;
+          final assets = await album.getAssetListRange(start: 0, end: count);
+          for (final asset in assets) {
+            assetMap[asset.id] = asset;
+          }
+        }
+        return assetMap.values.toList();
+      }
+
+      // Default: all videos album (usually isAll = true)
       final allVideosAlbum = albums.firstWhere(
         (a) => a.isAll,
         orElse: () => albums.first,
       );
 
       final totalCount = await allVideosAlbum.assetCountAsync;
+      final assets = await allVideosAlbum.getAssetListRange(
+        start: 0,
+        end: totalCount,
+      );
+      return assets;
+    } catch (e) {
+      debugPrint('[GalleryService] getAllVideoAssets error: $e');
+      return [];
+    }
+  }
 
-      // Determine sort order for fetching
+  // ----------------------------------------------------------------
+  // Load all video assets (paginated) from gallery
+  // ----------------------------------------------------------------
+  Future<List<VideoItem>> loadVideos({
+    required PlaybackMode mode,
+    int page = 0,
+    int pageSize = AppConstants.paginationBatchSize,
+  }) async {
+    try {
+      final albums = await getAlbums();
+      if (albums.isEmpty) return [];
+
+      final allVideosAlbum = albums.firstWhere(
+        (a) => a.isAll,
+        orElse: () => albums.first,
+      );
+
+      final totalCount = await allVideosAlbum.assetCountAsync;
       final pmPage = _buildPageArgs(mode, page, pageSize, totalCount);
 
       final assets = await allVideosAlbum.getAssetListPaged(
@@ -62,14 +110,11 @@ class GalleryService {
       );
 
       final hiddenIds = _prefs.getHiddenVideoIds();
-
-      // Map to VideoItem, filter hidden
       final items = assets
           .where((a) => !hiddenIds.contains(a.id))
           .map(VideoItem.fromAsset)
           .toList();
 
-      // Apply shuffle client-side if needed
       if (mode == PlaybackMode.shuffle) {
         items.shuffle();
       }
@@ -126,8 +171,6 @@ class GalleryService {
     int pageSize,
     int totalCount,
   ) {
-    // photo_manager always returns newest-first (desc createDate)
-    // For chronologicalAsc (oldest first), we need to flip the page index
     if (mode == PlaybackMode.chronologicalAsc) {
       final totalPages = (totalCount / pageSize).ceil();
       final flippedPage = (totalPages - 1 - page).clamp(0, totalPages - 1);

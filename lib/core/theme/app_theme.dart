@@ -5,40 +5,43 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // Brand Colors
-  static const Color background = Color(0xFF000000);
-  static const Color surface = Color(0xFF0D0D0D);
-  static const Color cardSurface = Color(0xFF1A1A1A);
+  // Base palette
+  static const Color background  = Color(0xFF050505);
+  static const Color surface     = Color(0xFF0F0F0F);
+  static const Color cardSurface = Color(0xFF181818);
 
-  static const Color accent = Color(0xFFFF3B5C); // TikTok-like red
+  // Brand accent (default — overridden at runtime by accentColorIndexProvider)
+  static const Color accent     = Color(0xFFFF3B5C);
   static const Color accentGold = Color(0xFFFFD60A);
   static const Color accentBlue = Color(0xFF4CC9F0);
 
-  static const Color textPrimary = Color(0xFFFFFFFF);
+  // Text
+  static const Color textPrimary   = Color(0xFFFFFFFF);
   static const Color textSecondary = Color(0xFFAAAAAA);
-  static const Color textMuted = Color(0xFF666666);
+  static const Color textMuted     = Color(0xFF555555);
 
-  static const Color liked = Color(0xFFFF3B5C);
+  // Semantic
+  static const Color liked  = Color(0xFFFF3B5C);
   static const Color hidden = Color(0xFF9CA3AF);
 
-  // Gradient for overlay
+  // Gradients
   static const LinearGradient bottomOverlay = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    stops: [0.0, 0.4, 1.0],
+    stops: [0.0, 0.45, 1.0],
     colors: [
       Colors.transparent,
       Colors.transparent,
-      Color(0xCC000000),
+      Color(0xDD000000),
     ],
   );
 
   static const LinearGradient topOverlay = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    stops: [0.0, 0.3],
+    stops: [0.0, 0.35],
     colors: [
-      Color(0x88000000),
+      Color(0xAA000000),
       Colors.transparent,
     ],
   );
@@ -52,17 +55,16 @@ class AppTheme {
         primary: accent,
         secondary: accentBlue,
         surface: surface,
-        background: background,
       ),
       textTheme: GoogleFonts.interTextTheme(
         const TextTheme(
-          headlineLarge: TextStyle(color: textPrimary, fontWeight: FontWeight.bold),
+          headlineLarge:  TextStyle(color: textPrimary, fontWeight: FontWeight.bold),
           headlineMedium: TextStyle(color: textPrimary, fontWeight: FontWeight.bold),
-          titleLarge: TextStyle(color: textPrimary, fontWeight: FontWeight.w600),
-          titleMedium: TextStyle(color: textPrimary, fontWeight: FontWeight.w500),
-          bodyLarge: TextStyle(color: textPrimary),
-          bodyMedium: TextStyle(color: textSecondary),
-          labelLarge: TextStyle(color: textPrimary, fontWeight: FontWeight.w600),
+          titleLarge:     TextStyle(color: textPrimary, fontWeight: FontWeight.w600),
+          titleMedium:    TextStyle(color: textPrimary, fontWeight: FontWeight.w500),
+          bodyLarge:      TextStyle(color: textPrimary),
+          bodyMedium:     TextStyle(color: textSecondary),
+          labelLarge:     TextStyle(color: textPrimary, fontWeight: FontWeight.w600),
         ),
       ),
       appBarTheme: AppBarTheme(
@@ -77,7 +79,7 @@ class AppTheme {
         iconTheme: const IconThemeData(color: textPrimary),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: Color(0xFF111111),
+        backgroundColor: Color(0xFF0D0D0D),
         selectedItemColor: accent,
         unselectedItemColor: textMuted,
         showSelectedLabels: true,
@@ -89,8 +91,22 @@ class AppTheme {
       snackBarTheme: SnackBarThemeData(
         backgroundColor: cardSurface,
         contentTextStyle: GoogleFonts.inter(color: textPrimary),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         behavior: SnackBarBehavior.floating,
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return Colors.white;
+          return Colors.white54;
+        }),
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return accent;
+          return Colors.white12;
+        }),
+      ),
+      listTileTheme: const ListTileThemeData(
+        tileColor: Colors.transparent,
+        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       ),
     );
   }

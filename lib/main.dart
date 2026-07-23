@@ -1,15 +1,17 @@
 // lib/main.dart
 // Application entry point. Initializes Hive database, checks permissions,
-// and sets up Riverpod state management.
+// and sets up Riverpod state management with multi-language support.
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:photo_manager/photo_manager.dart';
 
 import 'core/constants/app_constants.dart';
+import 'core/l10n/app_localizations.dart';
 import 'core/theme/app_theme.dart';
 import 'providers/feed_provider.dart';
 import 'screens/main_screen.dart';
@@ -36,7 +38,6 @@ void main() async {
     isGranted = permissionState.isAuth;
   } catch (e) {
     debugPrint('PhotoManager getPermissionState failed or unsupported platform: $e');
-    // On unsupported platforms (e.g. Linux desktop), default to true to allow UI review
     isGranted = true;
   }
 
@@ -66,11 +67,25 @@ class NostalgicReelApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isPermissionGranted = ref.watch(permissionGrantedProvider);
+    final locale = ref.watch(appLocaleProvider);
 
     return MaterialApp(
-      title: 'Nostaljik Reel',
+      title: 'My Reels',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
+      locale: locale,
+      supportedLocales: const [
+        Locale('tr'),
+        Locale('en'),
+        Locale('tk'),
+        Locale('ru'),
+      ],
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       home: isPermissionGranted ? const MainScreen() : const PermissionScreen(),
     );
   }

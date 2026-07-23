@@ -7,8 +7,12 @@ class AppConstants {
   static const String settingsBox = 'settings';
 
   // Settings keys
-  static const String playbackModeKey = 'playback_mode';
-  static const String muteByDefaultKey = 'mute_by_default';
+  static const String playbackModeKey      = 'playback_mode';
+  static const String muteByDefaultKey     = 'mute_by_default';
+  static const String videoFitCoverKey     = 'video_fit_cover';
+  static const String accentColorIndexKey  = 'accent_color_index';
+  static const String selectedAlbumIdsKey  = 'selected_album_ids';
+  static const String appLocaleKey         = 'app_locale';
 
   // Preload buffer: how many videos ahead/behind to keep alive
   static const int preloadCount = 2;

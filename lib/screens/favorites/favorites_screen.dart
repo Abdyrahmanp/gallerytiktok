@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/l10n/app_localizations.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/video_item.dart';
 import '../../providers/feed_provider.dart';
@@ -14,11 +15,12 @@ class FavoritesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final favAsync = ref.watch(favoritesProvider);
+    final l10n     = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: const Text('❤️  Favorilerim'),
+        title: Text('❤️  ${l10n.favorites}'),
         backgroundColor: AppTheme.surface,
       ),
       body: favAsync.when(
@@ -36,15 +38,15 @@ class FavoritesScreen extends ConsumerWidget {
                 children: [
                   const Text('🤍', style: TextStyle(fontSize: 56)),
                   const SizedBox(height: 12),
-                  const Text(
-                    'Henüz beğeni yok',
-                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
+                  Text(
+                    l10n.noVideos,
+                    style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Akışta ❤️ ile beğendiğin videolar burada görünür.',
+                    l10n.noVideosDesc,
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white.withOpacity(0.45), fontSize: 13),
+                    style: TextStyle(color: Colors.white.withValues(alpha: 0.45), fontSize: 13),
                   ),
                 ],
               ),
@@ -70,16 +72,20 @@ class FavoritesScreen extends ConsumerWidget {
     );
   }
 
-  void _openVideo(BuildContext ctx, List<VideoItem> videos, int startIndex, WidgetRef ref) {
-    Navigator.push(
+  void _openVideo(BuildContext ctx, List<VideoItem> videos, int startIndex, WidgetRef ref) async {
+    ref.read(isFeedTabActiveProvider.notifier).state = false;
+
+    await Navigator.push(
       ctx,
       MaterialPageRoute(
-        builder: (_) => ProviderScope(
-          overrides: [],
-          child: const _SingleVideoFeedWrapper(),
+        builder: (_) => FeedScreen(
+          initialVideos: videos,
+          initialIndex: startIndex,
         ),
       ),
     );
+
+    ref.read(isFeedTabActiveProvider.notifier).state = true;
   }
 }
 
@@ -99,10 +105,8 @@ class _FavoriteTile extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Thumbnail via FutureBuilder
           _ThumbnailImage(video: video),
 
-          // Duration badge
           Positioned(
             bottom: 4, right: 4,
             child: Container(
@@ -118,7 +122,6 @@ class _FavoriteTile extends StatelessWidget {
             ),
           ),
 
-          // Heart overlay
           const Positioned(
             top: 4, right: 4,
             child: Icon(Icons.favorite_rounded, color: AppTheme.liked, size: 16),
@@ -145,11 +148,4 @@ class _ThumbnailImage extends ConsumerWidget {
       },
     );
   }
-}
-
-// Minimal wrapper – favorites can push their own feed view
-class _SingleVideoFeedWrapper extends StatelessWidget {
-  const _SingleVideoFeedWrapper();
-  @override
-  Widget build(BuildContext context) => const FeedScreen();
 }

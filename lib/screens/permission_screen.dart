@@ -49,9 +49,9 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen> {
                 width: 100,
                 height: 100,
                 decoration: BoxDecoration(
-                  color: AppTheme.accent.withOpacity(0.1),
+                  color: AppTheme.accent.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppTheme.accent.withOpacity(0.3), width: 2),
+                  border: Border.all(color: AppTheme.accent.withValues(alpha: 0.3), width: 2),
                 ),
                 child: const Center(
                   child: Icon(
@@ -77,7 +77,7 @@ class _PermissionScreenState extends ConsumerState<PermissionScreen> {
               Text(
                 'Nostaljik Reel, yerel galerindeki unutulmuş videoları TikTok tarzı dikey akışla karşına çıkarır. Başlamak için galeri erişim iznine ihtiyacımız var.',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.7),
+                  color: Colors.white.withValues(alpha: 0.7),
                   fontSize: 14,
                   height: 1.5,
                 ),

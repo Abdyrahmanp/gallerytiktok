@@ -7,6 +7,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/constants/app_constants.dart';
+import '../../core/l10n/app_localizations.dart';
 import '../../core/theme/app_theme.dart';
 import '../../data/models/video_item.dart';
 import '../../providers/feed_provider.dart';
@@ -38,7 +39,6 @@ class _SideActionPanelState extends ConsumerState<SideActionPanel> {
 
   Future<void> _handleHide() async {
     HapticFeedback.lightImpact();
-    // Show confirmation
     final confirm = await showModalBottomSheet<bool>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -57,7 +57,7 @@ class _SideActionPanelState extends ConsumerState<SideActionPanel> {
     if (file == null) return;
     await Share.shareXFiles(
       [XFile(file.path)],
-      text: 'Bak bu videoyu bulduk 🎬',
+      text: 'My Reels 🎬',
     );
   }
 
@@ -71,6 +71,7 @@ class _SideActionPanelState extends ConsumerState<SideActionPanel> {
   Widget build(BuildContext context) {
     final isLiked = ref.watch(likedIdsProvider).contains(widget.video.id);
     final isMuted = ref.watch(isMutedProvider);
+    final l10n    = AppLocalizations.of(context);
 
     return Padding(
       padding: const EdgeInsets.only(right: 12, bottom: 80),
@@ -82,7 +83,7 @@ class _SideActionPanelState extends ConsumerState<SideActionPanel> {
             onTap: _handleLike,
             icon: isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
             color: isLiked ? AppTheme.liked : Colors.white,
-            label: isLiked ? 'Beğenildi' : 'Beğen',
+            label: isLiked ? l10n.liked : l10n.like,
             child: isLiked && _heartAnimating
                 ? const Icon(
                     Icons.favorite_rounded,
@@ -104,7 +105,7 @@ class _SideActionPanelState extends ConsumerState<SideActionPanel> {
             onTap: _handleHide,
             icon: Icons.visibility_off_rounded,
             color: Colors.white70,
-            label: 'Gizle',
+            label: l10n.hide,
           ),
 
           const SizedBox(height: 20),
@@ -114,7 +115,7 @@ class _SideActionPanelState extends ConsumerState<SideActionPanel> {
             onTap: _handleShare,
             icon: Icons.share_rounded,
             color: Colors.white,
-            label: 'Paylaş',
+            label: l10n.share,
           ),
 
           const SizedBox(height: 20),
@@ -124,7 +125,7 @@ class _SideActionPanelState extends ConsumerState<SideActionPanel> {
             onTap: _handleMute,
             icon: isMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
             color: isMuted ? Colors.amber : Colors.white,
-            label: isMuted ? 'Sessiz' : 'Ses',
+            label: isMuted ? l10n.mute : l10n.sound,
           ),
         ],
       ),
@@ -161,7 +162,7 @@ class _ActionButton extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.35),
+              color: Colors.black.withValues(alpha: 0.35),
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white12, width: 0.5),
             ),
@@ -197,6 +198,8 @@ class _HideConfirmSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(24),
@@ -218,15 +221,15 @@ class _HideConfirmSheet extends StatelessWidget {
           const SizedBox(height: 20),
           const Icon(Icons.visibility_off_rounded, color: Colors.white54, size: 40),
           const SizedBox(height: 12),
-          const Text(
-            'Bu videoyu gizle?',
-            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
+          Text(
+            l10n.hideVideoTitle,
+            style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Video akışında bir daha gösterilmeyecek. Bu işlem geri alınabilir (Ayarlar).',
+          Text(
+            l10n.hideVideoDesc,
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white60, fontSize: 13),
+            style: const TextStyle(color: Colors.white60, fontSize: 13),
           ),
           const SizedBox(height: 24),
           Row(
@@ -240,7 +243,7 @@ class _HideConfirmSheet extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: const Text('Vazgeç'),
+                  child: Text(l10n.cancel),
                 ),
               ),
               const SizedBox(width: 12),
@@ -253,7 +256,7 @@ class _HideConfirmSheet extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: const Text('Gizle'),
+                  child: Text(l10n.hide),
                 ),
               ),
             ],

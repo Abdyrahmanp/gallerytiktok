@@ -1,6 +1,6 @@
 // lib/widgets/feed/video_player_widget.dart
 // Single video player cell used inside the PageView.
-// Handles: init, play/pause, mute, dispose lifecycle.
+// Handles: init, play/pause, mute, dispose lifecycle, and controller callback.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,12 +10,14 @@ import '../../providers/feed_provider.dart';
 
 class VideoPlayerWidget extends ConsumerStatefulWidget {
   final VideoItem video;
-  final bool isActive; // true when this page is the current page
+  final bool isActive;
+  final ValueChanged<VideoPlayerController?>? onControllerReady;
 
   const VideoPlayerWidget({
     super.key,
     required this.video,
     required this.isActive,
+    this.onControllerReady,
   });
 
   @override
@@ -37,10 +39,8 @@ class _VideoPlayerWidgetState extends ConsumerState<VideoPlayerWidget> {
   void didUpdateWidget(covariant VideoPlayerWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.isActive && !oldWidget.isActive) {
-      // Became active → initialize & play
       _initController();
     } else if (!widget.isActive && oldWidget.isActive) {
-      // Became inactive → pause & release
       _disposeController();
     }
   }
@@ -65,6 +65,7 @@ class _VideoPlayerWidgetState extends ConsumerState<VideoPlayerWidget> {
       await _controller!.play();
 
       setState(() => _initialized = true);
+      widget.onControllerReady?.call(_controller);
     } catch (e) {
       debugPrint('[VideoPlayer] init error for ${widget.video.id}: $e');
     }
@@ -72,6 +73,7 @@ class _VideoPlayerWidgetState extends ConsumerState<VideoPlayerWidget> {
 
   void _disposeController() {
     _controller?.pause();
+    widget.onControllerReady?.call(null);
     _controller?.dispose();
     _controller = null;
     if (mounted) setState(() => _initialized = false);
@@ -104,23 +106,21 @@ class _VideoPlayerWidgetState extends ConsumerState<VideoPlayerWidget> {
 
   @override
   Widget build(BuildContext context) {
-    // Listen to global mute toggle
     ref.listen<bool>(isMutedProvider, (_, isMuted) => _updateMute(isMuted));
 
     return GestureDetector(
       onTap: _togglePlayPause,
+      behavior: HitTestBehavior.opaque,
       child: Container(
         color: Colors.black,
         child: Stack(
           fit: StackFit.expand,
           children: [
-            // Video
             if (_initialized && _controller != null)
               _buildVideoFrame()
             else
               _buildThumbnail(),
 
-            // Play/Pause overlay icon
             AnimatedOpacity(
               opacity: _showPlayIcon ? 1.0 : 0.0,
               duration: const Duration(milliseconds: 200),
@@ -129,7 +129,7 @@ class _VideoPlayerWidgetState extends ConsumerState<VideoPlayerWidget> {
                   width: 70,
                   height: 70,
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
+                    color: Colors.black.withValues(alpha: 0.5),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -150,8 +150,21 @@ class _VideoPlayerWidgetState extends ConsumerState<VideoPlayerWidget> {
 
   Widget _buildVideoFrame() {
     final controller = _controller!;
+    final fitMode = ref.watch(videoFitModeProvider);
+
+    BoxFit fit;
+    if (fitMode == 1) {
+      fit = BoxFit.cover;
+    } else if (fitMode == 2) {
+      fit = BoxFit.contain;
+    } else {
+      // Auto mode: portrait -> cover, landscape -> contain
+      final isPortrait = widget.video.isPortrait;
+      fit = isPortrait ? BoxFit.cover : BoxFit.contain;
+    }
+
     return FittedBox(
-      fit: BoxFit.cover,
+      fit: fit,
       child: SizedBox(
         width: controller.value.size.width,
         height: controller.value.size.height,
