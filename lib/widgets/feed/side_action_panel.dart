@@ -1,5 +1,6 @@
 // lib/widgets/feed/side_action_panel.dart
 // Right-side action panel: Like, Hide, Share, Mute.
+// Buttons respond instantly with visual feedback; async ops run in background.
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -29,12 +30,14 @@ class SideActionPanel extends ConsumerStatefulWidget {
 class _SideActionPanelState extends ConsumerState<SideActionPanel> {
   bool _heartAnimating = false;
 
-  Future<void> _handleLike() async {
+  void _handleLike() {
+    // Respond INSTANTLY — fire & forget the async toggle
     HapticFeedback.mediumImpact();
-    await ref.read(likedIdsProvider.notifier).toggle(widget.video.id);
     setState(() => _heartAnimating = true);
-    await Future.delayed(AppConstants.heartAnimDuration);
-    if (mounted) setState(() => _heartAnimating = false);
+    ref.read(likedIdsProvider.notifier).toggle(widget.video.id);
+    Future.delayed(AppConstants.heartAnimDuration, () {
+      if (mounted) setState(() => _heartAnimating = false);
+    });
   }
 
   Future<void> _handleHide() async {
@@ -50,15 +53,14 @@ class _SideActionPanelState extends ConsumerState<SideActionPanel> {
     }
   }
 
-  Future<void> _handleShare() async {
+  void _handleShare() {
+    // Respond instantly — share happens in background
     HapticFeedback.lightImpact();
     if (widget.video.asset == null) return;
-    final file = await widget.video.asset!.file;
-    if (file == null) return;
-    await Share.shareXFiles(
-      [XFile(file.path)],
-      text: 'My Reels 🎬',
-    );
+    widget.video.asset!.file.then((file) {
+      if (file == null) return;
+      Share.shareXFiles([XFile(file.path)], text: 'My Reels 🎬');
+    });
   }
 
   void _handleMute() {
@@ -84,16 +86,25 @@ class _SideActionPanelState extends ConsumerState<SideActionPanel> {
             icon: isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
             color: isLiked ? AppTheme.liked : Colors.white,
             label: isLiked ? l10n.liked : l10n.like,
+            glowColor: isLiked ? AppTheme.liked : null,
             child: isLiked && _heartAnimating
                 ? const Icon(
                     Icons.favorite_rounded,
                     color: AppTheme.liked,
                     size: 32,
-                  ).animate().scale(
-                      begin: const Offset(1, 1),
-                      end: const Offset(1.5, 1.5),
+                  )
+                    .animate()
+                    .scale(
+                      begin: const Offset(0.8, 0.8),
+                      end: const Offset(1.6, 1.6),
                       curve: Curves.elasticOut,
-                      duration: 600.ms,
+                      duration: 500.ms,
+                    )
+                    .then()
+                    .scale(
+                      begin: const Offset(1.6, 1.6),
+                      end: const Offset(1.0, 1.0),
+                      duration: 200.ms,
                     )
                 : null,
           ),
@@ -126,6 +137,7 @@ class _SideActionPanelState extends ConsumerState<SideActionPanel> {
             icon: isMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
             color: isMuted ? Colors.amber : Colors.white,
             label: isMuted ? l10n.mute : l10n.sound,
+            glowColor: isMuted ? Colors.amber : null,
           ),
         ],
       ),
@@ -134,15 +146,16 @@ class _SideActionPanelState extends ConsumerState<SideActionPanel> {
 }
 
 // -----------------------------------------------------------------------
-// Reusable action button
+// Reusable action button — responds instantly with press animation
 // -----------------------------------------------------------------------
 
-class _ActionButton extends StatelessWidget {
+class _ActionButton extends StatefulWidget {
   final VoidCallback onTap;
   final IconData icon;
   final Color color;
   final String label;
   final Widget? child;
+  final Color? glowColor;
 
   const _ActionButton({
     required this.onTap,
@@ -150,40 +163,96 @@ class _ActionButton extends StatelessWidget {
     required this.color,
     required this.label,
     this.child,
+    this.glowColor,
   });
+
+  @override
+  State<_ActionButton> createState() => _ActionButtonState();
+}
+
+class _ActionButtonState extends State<_ActionButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pressCtrl;
+  late final Animation<double> _scaleAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _pressCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 80),
+      reverseDuration: const Duration(milliseconds: 200),
+      lowerBound: 0.0,
+      upperBound: 1.0,
+    );
+    _scaleAnim = Tween<double>(begin: 1.0, end: 0.85).animate(
+      CurvedAnimation(parent: _pressCtrl, curve: Curves.easeOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pressCtrl.dispose();
+    super.dispose();
+  }
+
+  void _onTapDown(TapDownDetails _) => _pressCtrl.forward();
+  void _onTapUp(TapUpDetails _) {
+    _pressCtrl.reverse();
+    widget.onTap();
+  }
+  void _onTapCancel() => _pressCtrl.reverse();
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.35),
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white12, width: 0.5),
+      onTapDown: _onTapDown,
+      onTapUp: _onTapUp,
+      onTapCancel: _onTapCancel,
+      child: AnimatedBuilder(
+        animation: _scaleAnim,
+        builder: (_, child) => Transform.scale(
+          scale: _scaleAnim.value,
+          child: child,
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.38),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: widget.glowColor?.withValues(alpha: 0.4) ?? Colors.white12,
+                  width: 0.8,
+                ),
+                boxShadow: widget.glowColor != null
+                    ? [
+                        BoxShadow(
+                          color: widget.glowColor!.withValues(alpha: 0.3),
+                          blurRadius: 12,
+                          spreadRadius: 1,
+                        ),
+                      ]
+                    : [],
+              ),
+              child: Center(
+                child: widget.child ?? Icon(widget.icon, color: widget.color, size: 26),
+              ),
             ),
-            child: Center(
-              child: child ??
-                  Icon(icon, color: color, size: 26)
-                      .animate(target: 1)
-                      .shimmer(duration: 0.ms),
+            const SizedBox(height: 4),
+            Text(
+              widget.label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                shadows: [Shadow(blurRadius: 4, color: Colors.black54)],
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              shadows: [Shadow(blurRadius: 4, color: Colors.black54)],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

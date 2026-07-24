@@ -20,8 +20,26 @@ class FavoritesScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: Text('❤️  ${l10n.favorites}'),
         backgroundColor: AppTheme.surface,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: AppTheme.liked.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.favorite_rounded, color: AppTheme.liked, size: 17),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              l10n.favorites,
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
       ),
       body: favAsync.when(
         loading: () => const Center(
@@ -36,7 +54,7 @@ class FavoritesScreen extends ConsumerWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('🤍', style: TextStyle(fontSize: 56)),
+                  const Icon(Icons.favorite_border_rounded, color: Colors.white24, size: 64),
                   const SizedBox(height: 12),
                   Text(
                     l10n.noVideos,
@@ -73,8 +91,7 @@ class FavoritesScreen extends ConsumerWidget {
   }
 
   void _openVideo(BuildContext ctx, List<VideoItem> videos, int startIndex, WidgetRef ref) async {
-    ref.read(isFeedTabActiveProvider.notifier).state = false;
-
+    // Don't set isFeedTabActive = false here; initialVideos mode is self-contained
     await Navigator.push(
       ctx,
       MaterialPageRoute(
@@ -85,7 +102,14 @@ class FavoritesScreen extends ConsumerWidget {
       ),
     );
 
-    ref.read(isFeedTabActiveProvider.notifier).state = true;
+    // Wait for the FeedScreen to fully dispose its controllers before
+    // re-activating the main feed tab — prevents background video playback.
+    await Future.delayed(const Duration(milliseconds: 400));
+
+    // Re-activate main feed (if context is still valid)
+    if (ctx.mounted) {
+      ref.read(isFeedTabActiveProvider.notifier).state = true;
+    }
   }
 }
 

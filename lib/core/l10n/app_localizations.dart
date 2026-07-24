@@ -339,5 +339,5 @@ class _AppLocalizationsDelegate
       SynchronousFuture(AppLocalizations(locale));
 
   @override
-  bool shouldReload(_AppLocalizationsDelegate old) => false;
+  bool shouldReload(_AppLocalizationsDelegate old) => true;
 }

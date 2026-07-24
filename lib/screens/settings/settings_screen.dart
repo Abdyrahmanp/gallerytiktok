@@ -1,6 +1,7 @@
 // lib/screens/settings/settings_screen.dart
 // Expanded settings screen: language selector, playback, video fit (auto/cover/contain),
 // theme color, hidden videos accordion, cache management, and about section.
+// All section headers use real Flutter icons instead of emojis.
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -29,15 +30,33 @@ class SettingsScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: Text('⚙️  ${l10n.settings}'),
         backgroundColor: AppTheme.surface,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: accentColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(Icons.settings_rounded, color: accentColor, size: 18),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              l10n.settings,
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         children: [
 
           // ── 0. LANGUAGE SELECTOR ──────────────────────────────────
-          _sectionHeader('🌐  ${l10n.language}'),
+          _sectionHeader(Icons.language_rounded, l10n.language, accentColor),
           _card(
             children: [
               Padding(
@@ -70,14 +89,16 @@ class SettingsScreen extends ConsumerWidget {
           const SizedBox(height: 22),
 
           // ── 1. PLAYBACK ──────────────────────────────────────────
-          _sectionHeader('🎬  ${l10n.playbackSettings}'),
+          _sectionHeader(Icons.play_circle_outline_rounded, l10n.playbackSettings, accentColor),
           _card(
             children: [
               _switchTile(
                 icon: Icons.volume_off_rounded,
+                iconColor: accentColor,
                 title: l10n.muteByDefault,
                 subtitle: l10n.muteByDefaultDesc,
                 value: isMuted,
+                accentColor: accentColor,
                 onChanged: (val) async {
                   await prefs.setMuteByDefault(val);
                   ref.read(isMutedProvider.notifier).state = val;
@@ -89,7 +110,7 @@ class SettingsScreen extends ConsumerWidget {
           const SizedBox(height: 22),
 
           // ── 2. VIDEO FIT ────────────────────────────────────────
-          _sectionHeader('📐  ${l10n.screenFit}'),
+          _sectionHeader(Icons.aspect_ratio_rounded, l10n.screenFit, accentColor),
           _card(
             children: [
               Padding(
@@ -103,7 +124,7 @@ class SettingsScreen extends ConsumerWidget {
                           child: _fitOption(
                             label: l10n.fitAuto,
                             sublabel: l10n.fitAutoDesc,
-                            icon: Icons.aspect_ratio_rounded,
+                            icon: Icons.auto_awesome_rounded,
                             selected: fitMode == 0,
                             accentColor: accentColor,
                             onTap: () => ref.read(videoFitModeProvider.notifier).setMode(0),
@@ -114,7 +135,7 @@ class SettingsScreen extends ConsumerWidget {
                           child: _fitOption(
                             label: l10n.fitCover,
                             sublabel: l10n.fitCoverDesc,
-                            icon: Icons.crop_free_rounded,
+                            icon: Icons.fit_screen_rounded,
                             selected: fitMode == 1,
                             accentColor: accentColor,
                             onTap: () => ref.read(videoFitModeProvider.notifier).setMode(1),
@@ -125,7 +146,7 @@ class SettingsScreen extends ConsumerWidget {
                           child: _fitOption(
                             label: l10n.fitContain,
                             sublabel: l10n.fitContainDesc,
-                            icon: Icons.fit_screen_rounded,
+                            icon: Icons.crop_free_rounded,
                             selected: fitMode == 2,
                             accentColor: accentColor,
                             onTap: () => ref.read(videoFitModeProvider.notifier).setMode(2),
@@ -142,7 +163,7 @@ class SettingsScreen extends ConsumerWidget {
           const SizedBox(height: 22),
 
           // ── 3. THEME COLOR ──────────────────────────────────────
-          _sectionHeader('🎨  ${l10n.themeColor}'),
+          _sectionHeader(Icons.palette_rounded, l10n.themeColor, accentColor),
           _card(
             children: [
               Padding(
@@ -209,7 +230,7 @@ class SettingsScreen extends ConsumerWidget {
           const SizedBox(height: 22),
 
           // ── 4. HIDDEN VIDEOS ─────────────────────────────────────
-          _sectionHeader('🙈  ${l10n.hiddenVideos} (${hiddenIds.length})'),
+          _sectionHeader(Icons.hide_source_rounded, '${l10n.hiddenVideos} (${hiddenIds.length})', accentColor),
           _card(
             children: [
               Theme(
@@ -219,6 +240,7 @@ class SettingsScreen extends ConsumerWidget {
                   collapsedShape: const Border(),
                   iconColor: accentColor,
                   collapsedIconColor: Colors.white54,
+                  leading: Icon(Icons.visibility_off_outlined, color: Colors.white54, size: 20),
                   title: Text(
                     hiddenIds.isEmpty ? l10n.noHiddenVideos : '${hiddenIds.length} ${l10n.hiddenVideos}',
                     style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14),
@@ -242,7 +264,7 @@ class SettingsScreen extends ConsumerWidget {
           const SizedBox(height: 22),
 
           // ── 5. CACHE & DATA ──────────────────────────────────────
-          _sectionHeader('🗑️  ${l10n.clearCache}'),
+          _sectionHeader(Icons.cleaning_services_rounded, l10n.clearCache, accentColor),
           _card(
             children: [
               ListTile(
@@ -291,7 +313,7 @@ class SettingsScreen extends ConsumerWidget {
           const SizedBox(height: 22),
 
           // ── 6. ABOUT ─────────────────────────────────────────────
-          _sectionHeader('ℹ️  ${l10n.about}'),
+          _sectionHeader(Icons.info_outline_rounded, l10n.about, accentColor),
           _card(
             children: [
               Padding(
@@ -397,17 +419,23 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _sectionHeader(String title) {
+  Widget _sectionHeader(IconData icon, String title, Color accentColor) {
     return Padding(
       padding: const EdgeInsets.only(left: 4, bottom: 10),
-      child: Text(
-        title,
-        style: const TextStyle(
-          color: AppTheme.accentBlue,
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.8,
-        ),
+      child: Row(
+        children: [
+          Icon(icon, color: accentColor, size: 14),
+          const SizedBox(width: 6),
+          Text(
+            title.toUpperCase(),
+            style: TextStyle(
+              color: accentColor,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.9,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -426,17 +454,27 @@ class SettingsScreen extends ConsumerWidget {
 
   Widget _switchTile({
     required IconData icon,
+    required Color iconColor,
     required String title,
     required String subtitle,
     required bool value,
+    required Color accentColor,
     required ValueChanged<bool> onChanged,
   }) {
     return SwitchListTile(
-      secondary: Icon(icon, color: Colors.white60, size: 22),
+      secondary: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: iconColor.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(9),
+        ),
+        child: Icon(icon, color: iconColor, size: 20),
+      ),
       title: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 14)),
       subtitle: Text(subtitle, style: const TextStyle(color: Colors.white38, fontSize: 12)),
       value: value,
-      activeTrackColor: AppTheme.accent,
+      activeTrackColor: accentColor,
       onChanged: onChanged,
     );
   }
@@ -456,7 +494,7 @@ class SettingsScreen extends ConsumerWidget {
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
           color: selected ? accentColor.withValues(alpha: 0.15) : Colors.white.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(12),
@@ -464,6 +502,9 @@ class SettingsScreen extends ConsumerWidget {
             color: selected ? accentColor : Colors.white12,
             width: selected ? 1.5 : 1,
           ),
+          boxShadow: selected
+              ? [BoxShadow(color: accentColor.withValues(alpha: 0.2), blurRadius: 10)]
+              : [],
         ),
         child: Column(
           children: [
@@ -471,7 +512,7 @@ class SettingsScreen extends ConsumerWidget {
             const SizedBox(height: 6),
             Text(label, style: TextStyle(color: selected ? Colors.white : Colors.white60, fontWeight: FontWeight.w600, fontSize: 12)),
             const SizedBox(height: 2),
-            Text(sublabel, style: TextStyle(color: selected ? accentColor : Colors.white30, fontSize: 9)),
+            Text(sublabel, style: TextStyle(color: selected ? accentColor.withValues(alpha: 0.8) : Colors.white30, fontSize: 9)),
           ],
         ),
       ),

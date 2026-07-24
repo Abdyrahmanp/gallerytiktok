@@ -1,5 +1,7 @@
 // lib/core/constants/app_constants.dart
 
+import 'package:flutter/material.dart';
+
 class AppConstants {
   // Hive box names
   static const String likedVideosBox = 'liked_videos';
@@ -42,6 +44,19 @@ extension PlaybackModeLabel on PlaybackMode {
     }
   }
 
+  // Real Flutter icon instead of emoji
+  IconData get iconData {
+    switch (this) {
+      case PlaybackMode.shuffle:
+        return Icons.shuffle_rounded;
+      case PlaybackMode.chronologicalAsc:
+        return Icons.arrow_upward_rounded;
+      case PlaybackMode.chronologicalDesc:
+        return Icons.arrow_downward_rounded;
+    }
+  }
+
+  // Keep for backward compatibility (unused in UI going forward)
   String get icon {
     switch (this) {
       case PlaybackMode.shuffle:
